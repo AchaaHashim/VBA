@@ -1,0 +1,186 @@
+Sub Macro5()
+
+Application.ScreenUpdating = False
+Dim txtFileNameAndPath As String
+    Dim ImportingFileName As String
+    Dim SheetName As Worksheet
+    Dim fd As Office.FileDialog
+ 
+    Set fd = Application.FileDialog(msoFileDialogFilePicker)
+ 
+    With fd
+        'Enable this option if want to be able to select multiple files
+        .AllowMultiSelect = False
+ 
+        'This sets the title of the dialog box.
+        .Title = "Please select Recipe file."
+ 
+        'Sets the associated filters for types of files
+        .Filters.Clear
+        '.Filters.Add "txt", "*.txt"
+        .Filters.Add "All Files", "*.*"
+ 
+        ' Show the dialog box. If the .Show method returns True, the
+        ' user picked at least one file. If the .Show method returns
+        ' False, the user clicked Cancel.
+           If .Show = True Then
+             txtFileNameAndPath = .SelectedItems(1)
+           Else
+               MsgBox " you didnt select anything"
+               Exit Sub
+           End If
+       End With
+    
+       'Extracts only the file name for reference later
+       ImportingFileName = Right(txtFileNameAndPath, _
+           Len(txtFileNameAndPath) - InStrRev(txtFileNameAndPath, "\"))
+           
+           
+Dim fname As String
+ fname = Right$(fd.SelectedItems(1), Len(fd.SelectedItems(1)) - InStrRev(fd.SelectedItems(1), "\"))
+ fname = Left(fname, InStr(1, fname, ".") - 1)
+ 'MsgBox fname
+
+Dim sht As Worksheet
+
+    For Each sht In ThisWorkbook.Worksheets
+        If sht.Name = fname Then
+        check = True:
+        Exit For
+        End If
+       Next
+        
+        If check = True Then
+            MsgBox "duplicate sheet"
+            Exit Sub
+            Else
+            Sheets.Add.Name = fname
+            Worksheets(fname).Activate
+    
+       With ActiveSheet.QueryTables.Add(Connection:= _
+           "TEXT;" & txtFileNameAndPath _
+           , Destination:=Worksheets(fname).Range("$A$1"))
+           .Name = "ImportingFileName"
+           .FieldNames = True
+           .RowNumbers = False
+           .FillAdjacentFormulas = False
+           .PreserveFormatting = True
+           .RefreshOnFileOpen = False
+           .RefreshStyle = xlInsertDeleteCells
+           .SaveData = True
+           .AdjustColumnWidth = True
+           .RefreshPeriod = 0
+           .TextFilePromptOnRefresh = False
+           .TextFilePlatform = 437
+           .TextFileStartRow = 1
+           .TextFileParseType = xlDelimited
+           .TextFileTextQualifier = xlTextQualifierDoubleQuote
+           .TextFileConsecutiveDelimiter = False
+           .TextFileTabDelimiter = False
+           .TextFileSemicolonDelimiter = False
+           .TextFileCommaDelimiter = False
+           .TextFileSpaceDelimiter = False
+           .TextFileColumnDataTypes = Array(1, 1, 1, 1, 1, 1, 1, 1)
+           '.TextFileTrailingMinusNumbers = True
+           .Refresh BackgroundQuery:=False
+       End With
+            
+        End If
+
+Dim lastrowsheet As Long, lastrowBAU As Long
+
+Dim x As Long
+lastrowBAU = Sheets("BAU").Range("A" & Rows.Count).End(xlUp).row
+lastrowsheet = Sheets(fname).Range("A" & Rows.Count).End(xlUp).row
+
+Dim i As Long
+Dim Cell As Range, finding As Range
+
+
+
+For i = 1 To lastrowBAU
+
+
+        Worksheets(fname).Range("A1:A" & lastrowsheet).Select
+           
+    
+       
+         Set Cell = Selection.find(What:=ThisWorkbook.Worksheets("BAU").Range("A" & i).Value, After:=ActiveCell, LookIn:=xlFormulas, _
+                LookAt:=xlPart, SearchOrder:=xlByRows, _
+                MatchCase:=False)
+            
+                 If Not Cell Is Nothing Then
+        
+                    Cell.Activate
+                    ActiveCell.Copy
+                    ActiveCell.Insert Shift:=xlShiftDown
+                    
+                             ActiveCell.Offset(1, 0).Select
+                    Selection.Replace What:=ThisWorkbook.Worksheets("BAU").Range("A" & i).Value, _
+                    replacement:=ThisWorkbook.Worksheets("BAU").Range("B" & i).Value, _
+                    LookAt:=xlPart, SearchOrder:=xlByRows, MatchCase:=False
+                    Set Cell = Worksheets(fname).Range("A1:A" & lastrowsheet).FindNext(Cell)
+                    
+                End If
+       
+  Next i
+
+ Dim splitcell() As String
+ Dim splitspace1() As String
+ Dim splitspace2() As String
+ Dim lowercase1 As String
+lastrowsheet = Sheets(fname).Range("A" & Rows.Count).End(xlUp).row
+For i = 1 To lastrowsheet
+Worksheets(fname).Range("A" & i).Select
+ Set Cell = Selection.find(What:="development", After:=ActiveCell, LookIn:=xlFormulas, _
+        LookAt:=xlPart, SearchOrder:=xlByRows, _
+        MatchCase:=True)
+    If (Cell Is Nothing) Then
+'        ' Do something
+    Else
+        Cell.Activate
+        For x = 1 To 2
+        splitcell = split(Cell.Value, "[")
+        splitspace1 = split(splitcell(1), " ")
+        
+        
+        
+                If (UBound(splitcell)) = 2 Then
+                    'Array contains values
+                    splitspace2 = split(splitcell(2), " ")
+                    lowercase2 = LCase(splitspace2(0))
+                
+                
+                    Selection.Replace What:=splitspace2(0), _
+                    replacement:=lowercase2, _
+                    LookAt:=xlPart, SearchOrder:=xlByRows, MatchCase:=False
+                
+                 End If
+    
+        lowercase1 = LCase(splitspace1(0))
+        
+        'MsgBox lowercase
+        
+        Selection.Replace What:=splitspace1(0), _
+        replacement:=lowercase1, _
+        LookAt:=xlPart, SearchOrder:=xlByRows, MatchCase:=False
+        'lowercase = Replace(Cell.Value, splitspace(0), lowercase)
+        Exit For
+        Next x
+
+        'i = Cell.row + 1
+     End If
+Next i
+
+Application.ScreenUpdating = True
+
+        
+        'Name "\\MKZSDV507.infineon.com\DA_reports\oneSAP\IPTest\" & fname & ".prn" As "\\MKZSDV507.infineon.com\DA_reports\oneSAP\IPTest\" & fname & ".txt"
+
+
+    Application.DisplayAlerts = True
+    MsgBox "Your file updated and please save!"
+
+End Sub
+
+
